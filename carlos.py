@@ -4,6 +4,7 @@ import random
 import time
 import json
 import os
+from PIL import Image  # reemplaza imghdr
 
 # Credenciales de la API de Telegram
 api_id = 25408691
@@ -14,17 +15,15 @@ MODO_PRUEBA = False  # Cambia a True para pruebas rápidas
 CLAVE = "foto extraída de cartilla"
 ARCHIVO_RESPUESTAS = "respuestas.txt"
 ARCHIVO_USADAS = "usadas.json"
-ID_GRUPO = -1001370401693  # Puede ser el nombre del grupo o su ID numérico
+ID_GRUPO = -1001370401693  # ID del grupo
 
 # Inicializar cliente de Telethon
 client = TelegramClient('session_name', api_id, api_hash)
 
-# Cargar respuestas desde el archivo
 def cargar_respuestas():
     with open(ARCHIVO_RESPUESTAS, 'r', encoding='utf-8') as f:
         return [linea.strip() for linea in f if linea.strip()]
 
-# Cargar respuestas ya utilizadas
 def cargar_usadas():
     if not os.path.exists(ARCHIVO_USADAS):
         return []
@@ -32,14 +31,12 @@ def cargar_usadas():
         data = json.load(f)
         return data.get('respuestas_usadas', [])
 
-# Guardar respuesta como utilizada
 def guardar_usada(respuesta):
     usadas = cargar_usadas()
     usadas.append(respuesta)
     with open(ARCHIVO_USADAS, 'w', encoding='utf-8') as f:
         json.dump({'respuestas_usadas': usadas}, f, indent=4, ensure_ascii=False)
 
-# Elegir una respuesta no utilizada
 def elegir_respuesta():
     todas = cargar_respuestas()
     usadas = cargar_usadas()
@@ -51,29 +48,26 @@ def elegir_respuesta():
     guardar_usada(respuesta)
     return respuesta
 
-# Reiniciar el archivo de respuestas usadas
 def reset_usadas():
     if os.path.exists(ARCHIVO_USADAS):
         os.remove(ARCHIVO_USADAS)
 
-# Función para responder con retraso
 def responder_con_delay(mensaje):
     tiempo_espera = random.randint(600, 900) if not MODO_PRUEBA else random.randint(10, 15)
     time.sleep(tiempo_espera)
     respuesta = elegir_respuesta()
     client.send_message(mensaje.chat.id, respuesta)
 
-# Función principal para procesar mensajes antiguos
 def procesar_mensajes():
     grupo = client.get_entity(ID_GRUPO)
-    mensajes = client.get_messages(grupo, limit=100)  # Limita a los últimos 100 mensajes
+    mensajes = client.get_messages(grupo, limit=100)
     for mensaje in mensajes:
-        if CLAVE in mensaje.text.lower():
+        if CLAVE.lower() in mensaje.text.lower():
             print(f"Respondiendo al mensaje de {mensaje.sender_id}")
             responder_con_delay(mensaje)
 
-# Iniciar cliente y procesar mensajes
-with client:
-    print("🤖 Bot Carlos corriendo en Termux...")
-    procesar_mensajes()
-    client.run_until_disconnected()
+if __name__ == "__main__":
+    with client:
+        print("🤖 Bot Carlos corriendo en Render...")
+        procesar_mensajes()
+        client.run_until_disconnected()
